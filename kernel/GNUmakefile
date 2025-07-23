@@ -25,6 +25,15 @@ else
     CC := cc
 endif
 
+# User controllable linker command.
+LD := $(TOOLCHAIN_PREFIX)ld
+
+# Defaults overrides for variables if using "llvm" as toolchain.
+ifeq ($(TOOLCHAIN),llvm)
+    CC := clang
+    LD := ld.lld
+endif
+
 # User controllable C flags.
 CFLAGS := -g -O2 -pipe
 
@@ -36,12 +45,6 @@ NASMFLAGS := -F dwarf -g
 
 # User controllable linker flags. We set none by default.
 LDFLAGS :=
-
-# Defaults overrides for variables if using "llvm" as toolchain.
-ifeq ($(TOOLCHAIN),llvm)
-    CC := clang
-    override LDFLAGS := -fuse-ld=lld $(LDFLAGS)
-endif
 
 # Ensure the dependencies have been obtained.
 ifneq ($(shell ( test '$(MAKECMDGOALS)' = clean || test '$(MAKECMDGOALS)' = distclean ); echo $$?),0)
@@ -98,13 +101,12 @@ override NASMFLAGS := \
 
 # Internal linker flags that should not be changed by the user.
 override LDFLAGS += \
-    -static \
+    -m elf_x86_64 \
     -nostdlib \
-    -Wl,-nostdlib \
-    -Wl,-m,elf_x86_64 \
-    -Wl,-z,max-page-size=0x1000 \
-    -Wl,--gc-sections \
-    -Wl,-T,linker-scripts/x86_64.lds
+    -static \
+    -z max-page-size=0x1000 \
+    --gc-sections \
+    -T linker-scripts/x86_64.lds
 
 # Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
 # object and header dependency file names.
@@ -125,7 +127,7 @@ all: bin/$(OUTPUT)
 # Link rules for the final executable.
 bin/$(OUTPUT): GNUmakefile linker-scripts/x86_64.lds $(OBJ)
 	mkdir -p "$$(dirname $@)"
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@
+	$(LD) $(OBJ) $(LDFLAGS) -o $@
 
 # Compilation rules for *.c files.
 obj/%.c.o: %.c GNUmakefile
