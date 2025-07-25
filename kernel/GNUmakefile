@@ -76,6 +76,7 @@ override CFLAGS += \
     -fdata-sections \
     -m64 \
     -march=x86-64 \
+    -mabi=sysv \
     -mno-80387 \
     -mno-mmx \
     -mno-sse \
