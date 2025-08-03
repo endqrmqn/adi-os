@@ -1,5 +1,4 @@
-# Nuke built-in rules and variables.
-MAKEFLAGS += -rR
+# Nuke built-in rules.
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
