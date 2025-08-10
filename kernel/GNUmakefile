@@ -127,22 +127,22 @@ all: bin/$(OUTPUT)
 
 # Link rules for the final executable.
 bin/$(OUTPUT): GNUmakefile linker-scripts/x86_64.lds $(OBJ)
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	$(LD) $(OBJ) $(LDFLAGS) -o $@
 
 # Compilation rules for *.c files.
 obj/%.c.o: %.c GNUmakefile
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 # Compilation rules for *.S files.
 obj/%.S.o: %.S GNUmakefile
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 # Compilation rules for *.asm (nasm) files.
 obj/%.asm.o: %.asm GNUmakefile
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	nasm $(NASMFLAGS) $< -o $@
 
 # Remove object files and the final executable.
