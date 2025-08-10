@@ -128,7 +128,7 @@ all: bin/$(OUTPUT)
 # Link rules for the final executable.
 bin/$(OUTPUT): GNUmakefile linker-scripts/x86_64.lds $(OBJ)
 	mkdir -p "$(dir $@)"
-	$(LD) $(OBJ) $(LDFLAGS) -o $@
+	$(LD) $(LDFLAGS) $(OBJ) -o $@
 
 # Compilation rules for *.c files.
 obj/%.c.o: %.c GNUmakefile
