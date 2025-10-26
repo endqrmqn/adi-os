@@ -90,7 +90,7 @@ override CPPFLAGS := \
     -I limine-protocol/include \
     -isystem freestnd-c-hdrs/include \
     $(CPPFLAGS) \
-    -DLIMINE_API_REVISION=3 \
+    -DLIMINE_API_REVISION=4 \
     -MMD \
     -MP
 
