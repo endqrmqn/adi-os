@@ -152,7 +152,7 @@ clean:
 # Remove everything built and generated including downloaded dependencies.
 .PHONY: distclean
 distclean: clean
-	rm -rf .deps-obtained freestnd-c-hdrs cc-runtime limine-protocol
+	rm -rf .deps-obtained .cache compile_commands.json freestnd-c-hdrs cc-runtime limine-protocol
 
 # Install the final built executable to its final on-root location.
 .PHONY: install

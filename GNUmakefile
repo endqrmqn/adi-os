@@ -108,4 +108,4 @@ clean:
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C kernel distclean
-	rm -rf kernel-deps limine edk2-ovmf
+	rm -rf limine edk2-ovmf
