@@ -2,3 +2,5 @@
 /edk2-ovmf
 *.iso
 *.hdd
+.DS_Store
+*.swp
