@@ -3,9 +3,16 @@
 #include <stdbool.h>
 #include <limine.h>
 #include <character.h>
+#include <keyboard.h>
 
 #define TERM_BG 0x00000000
 #define TERM_FG 0x00ffffff
+#define MENUBAR_H 24
+#define TERM_Y_OFFSET MENUBAR_H
+
+#define INPUT_MAX 256
+static char input_buf[INPUT_MAX];
+static size_t input_len = 0;
 
 static size_t term_col = 0;
 static size_t term_row = 0;
@@ -89,14 +96,14 @@ static void terminal_putchar(struct limine_framebuffer *fb, char c){
     size_t h = 10 * term_scale;
 
     size_t cols = fb->width / w;
-    size_t rows = fb->height/ h;
-    
+    size_t rows = (fb->height - MENUBAR_H) / h;
+
     if (c == '\n'){
         term_col = 0;
         ++term_row;
     }
     else{
-        draw_char(fb, c, term_col * w, term_row * h, TERM_FG, term_scale);
+        draw_char(fb, c, term_col * w, MENUBAR_H + term_row * h, TERM_FG, term_scale);
         ++term_col;
         if (term_col >= cols){
             term_col = 0;
@@ -123,12 +130,46 @@ static void draw_rect(struct limine_framebuffer *fb, size_t x, size_t y, size_t 
         }
     }
 }
+static void draw_topbar(struct limine_framebuffer *fb) {
+    draw_rect(fb, 0, 0, fb->width, MENUBAR_H, 0x00222222);
 
+    draw_string(fb,
+        "adi-os   programs   mem   time   help",
+        6, 2,
+        0x00ffffff,
+        2);
+}
 static void terminal_draw_cursor(struct limine_framebuffer *fb){
     size_t char_w = 8 * term_scale;
     size_t char_h = 10 * term_scale;
 
-    draw_rect(fb, term_col * char_w, term_row * char_h, char_w, char_h, TERM_FG);
+    draw_rect(fb, term_col * char_w, MENUBAR_H + term_row * char_h, char_w, char_h, TERM_FG);
+}
+
+static void terminal_erase_cursor(struct limine_framebuffer *fb){
+    size_t char_w = 8 * term_scale;
+    size_t char_h = 10 * term_scale; 
+
+    draw_rect(fb, term_col * char_w, MENUBAR_H + term_row * char_h, char_w, char_h, TERM_BG);
+}
+
+static int streq(const char *a, const char *b) {
+    while (*a && *b){
+        if (*a != *b){return 0;}
+        a++; b++;
+    }
+    return *a == *b;
+}
+
+static void shell_execute(struct limine_framebuffer *fb, const char *cmd){
+    if (streq(cmd, "help")){terminal_write(fb, "commands: help, clear, echo\n");}
+    else if (streq(cmd, "clear")){clear_screen(fb, TERM_BG); draw_topbar(fb); term_col = 0; term_row = 0;}
+    else if (cmd[0] == 0){}
+    else{
+        terminal_write(fb, "unknown command: ");
+        terminal_write(fb, cmd);
+        terminal_putchar(fb, '\n');
+    }
 }
 
 // The following will be our kernel's entry point.
@@ -149,15 +190,52 @@ void kmain(void) {
     // Fetch the first framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    draw_string(framebuffer, "welcome to adi-os", 50, 50, 0x00ffffff, 2);
-    // We're done, just hang...
     clear_screen(framebuffer, TERM_BG);
-    
+    draw_topbar(framebuffer);    
 
-    terminal_write(framebuffer, "adi-os booting...\n");
+    terminal_write(framebuffer, "cronk booted.\n");
     terminal_write(framebuffer, "framebuffer initialized\n");
-    terminal_write(framebuffer, "welcome to the fake terminal\n");
+    terminal_write(framebuffer, "welcome to terminal\n");
     terminal_write(framebuffer, "> ");
     terminal_draw_cursor(framebuffer);
-    hcf();
+    keyboard_init();
+
+    while(1){
+        char c = keyboard_poll_char();
+
+        if(!c){
+            asm volatile("pause");
+            continue;
+        }
+        terminal_erase_cursor(framebuffer);
+        if (c=='\n') {
+            input_buf[input_len] = 0;
+            
+            terminal_putchar(framebuffer, '\n');
+            shell_execute(framebuffer, input_buf);
+            
+            input_len = 0;
+            terminal_write(framebuffer, "> " );
+        }
+        else if (c=='\b'){
+            if (input_len > 0) {
+                --input_len;
+                input_buf[input_len] = 0;
+                if (term_col > 2) {
+                    --term_col;
+                    size_t char_w = 8 * term_scale;
+                    size_t char_h = 10 * term_scale;
+                    draw_rect(framebuffer, term_col * char_w, term_row * char_h, char_w, char_h, TERM_BG);
+                }
+            }
+        }
+        else {
+            if (input_len < INPUT_MAX - 1){
+                input_buf[input_len++] = c;
+                terminal_putchar(framebuffer, c);
+            }
+        }
+        
+        terminal_draw_cursor(framebuffer);
+    }
 }
